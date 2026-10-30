@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Served from the domain root (https://78cxrlos.github.io/). To host under a
-  // sub-path instead (a project repo), set this to '/repo-name/'.
-  base: '/',
+  // Served from GitHub Pages at https://78cxrlos.github.io/carlos-portfolio/.
+  // If you move the site to a domain root (or rename the repo), change this.
+  base: '/carlos-portfolio/',
   build: {
     // three + R3F are large; split them so the app shell loads quickly and the
     // 3D chunk can be cached separately.

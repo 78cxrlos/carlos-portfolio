@@ -49,7 +49,7 @@
  *               socials     Each becomes a draggable plug at the network port.
  *                           `kind` picks the connector style.
  *  resumeUrl    Link for every "Resume" button. Put a PDF in /public and use
- *               "/resume.pdf", or link to an external file.
+ *               "resume.pdf" (resolved against the site's base path), or a full URL.
  *  easterEggs   Text revealed by the hidden secrets (keep it fun).
  *  bench        Handwritten / printed bits on the board: the masking-tape
  *               label, the sticky note, the QC sticker serial and the tiny
@@ -148,7 +148,7 @@ export const siteContent: SiteContent = {
     title: 'Mark Chege — full-stack developer',
     description:
       'Mark Chege builds web apps end to end — Flask or Express behind, React in front — and spends his spare time breaking them on purpose. Projects, experience and contact details.',
-    siteUrl: 'https://78cxrlos.github.io',
+    siteUrl: 'https://78cxrlos.github.io/carlos-portfolio/',
   },
 
   person: {
@@ -400,7 +400,7 @@ export const siteContent: SiteContent = {
     ],
   },
 
-  resumeUrl: '/resume.pdf',
+  resumeUrl: 'resume.pdf',
 
   easterEggs: {
     konami: 'Cheat accepted. The board now runs at its rated clock, which is to say, the same.',

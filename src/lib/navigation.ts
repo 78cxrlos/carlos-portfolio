@@ -15,7 +15,9 @@ export function navigateTo(id: string) {
 }
 
 export function openResume() {
-  window.open(siteContent.resumeUrl, '_blank', 'noopener,noreferrer');
+  // Relative paths resolve against Vite's base, so this works under /carlos-portfolio/ too.
+  const url = /^(https?:)?\/\//.test(siteContent.resumeUrl) ? siteContent.resumeUrl : `${import.meta.env.BASE_URL}${siteContent.resumeUrl.replace(/^\//, '')}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /** "Plug in" a social link: mark it connected, toast, and open it. */

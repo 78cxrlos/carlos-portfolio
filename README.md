@@ -210,14 +210,14 @@ Performance notes:
 
 Routing is hash-based (`#/`, `#/simple`; unknown hash routes show the kernel-panic 404), so any static host works.
 
-**GitHub Pages (set up):** `.github/workflows/deploy.yml` builds the site and publishes `dist/` on every push to `main`. The repo is `78cxrlos/78cxrlos.github.io`, so the site is served at **https://78cxrlos.github.io/**.
+**GitHub Pages (set up):** `.github/workflows/deploy.yml` builds the site and publishes `dist/` on every push to `main`. The repo is `78cxrlos/carlos-portfolio`, so the site is served at **https://78cxrlos.github.io/carlos-portfolio/** (`base` in `vite.config.ts`).
 
 - One-time setup: in the repo, go to **Settings → Pages → Source: GitHub Actions**.
-- To host from a project repo instead (`https://78cxrlos.github.io/<repo>/`), set `base: '/<repo>/'` in `vite.config.ts`, change `resumeUrl` to `'resume.pdf'`, and update the absolute `og:image` / `og:url` in `index.html`.
+- If you rename the repo or move to a domain root, update `base` in `vite.config.ts` and the absolute `og:image` / `og:url` in `index.html`.
 
 **Vercel / Netlify:** import the repo. `vercel.json` and `netlify.toml` are included (build `npm run build`, output `dist`).
 
-Share `https://78cxrlos.github.io/#/simple` with recruiters for the fast plain version.
+Share `https://78cxrlos.github.io/carlos-portfolio/#/simple` with recruiters for the fast plain version.
 
 ---
 
