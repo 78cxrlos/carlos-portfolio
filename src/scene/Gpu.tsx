@@ -2,10 +2,12 @@ import { useEffect, useMemo } from 'react';
 import { ANCHORS } from './anchors';
 import { PALETTE } from '../lib/themes';
 import { runtime } from '../store/runtime';
+import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
 import { Fan } from './Fan';
 import { createMetalTextures, createPaperLabel } from './textures';
-import { useFontsReady, useHoverCursor } from './helpers';
+import { hideSceneTip, showSceneTip, useFontsReady, useHoverCursor } from './helpers';
+import { ui } from '../content/uiStrings';
 
 /**
  * Graphics card on standoffs above its PCIe slot. Brushed aluminium shroud,
@@ -47,12 +49,15 @@ export function Gpu() {
         </mesh>
         <mesh
           position={[0, 0.45, 0]}
-          {...hover}
+          onPointerOver={(e) => (hover.onPointerOver(e), showSceneTip(e, ui.hints.fanTip))}
+          onPointerMove={(e) => showSceneTip(e, ui.hints.fanTip)}
+          onPointerOut={() => (hover.onPointerOut(), hideSceneTip())}
           onClick={(e) => {
             e.stopPropagation();
             runtime.fanBoost = Math.min(3, runtime.fanBoost + 1.6);
             runtime.ledFlash = 1;
             playSound('click');
+            useStore.getState().unlock('fan');
           }}
         >
           <boxGeometry args={[W - 0.2, 0.75, D - 0.2]} />

@@ -1,3 +1,5 @@
+import { ui, type SectionCopy } from '../content/uiStrings';
+
 /**
  * The scroll journey. Each section is a "station" on the camera path.
  *
@@ -13,14 +15,18 @@
  *   Data bus along z = 12          Network port at (26, 14)
  */
 export interface SectionDef {
-  id: string;
-  /** Short nav label. */
+  id: SectionId;
+  /** Plain menu label ("About"). Always shown first. Text lives in content/uiStrings.ts. */
   label: string;
-  /** Schematic reference designator shown on the rail and in captions. */
-  ref: string;
+  /** Small hardware caption under the label ("CPU"). */
+  caption: string;
   /** Headline used in panels. */
   title: string;
-  /** Figure caption, like an annotation on a schematic. */
+  /** One plain sentence about the section. */
+  intro: string;
+  /** Schematic reference designator — decorative only, never the only label. */
+  ref: string;
+  /** Figure caption, like an annotation on a schematic (decorative). */
   fig: string;
   hardware: string;
   cam: [number, number, number];
@@ -28,15 +34,20 @@ export interface SectionDef {
   panelSide: 'left' | 'none';
 }
 
-export const SECTIONS: SectionDef[] = [
-  { id: 'hero', label: 'Home', ref: 'J1', title: 'Board overview', fig: 'FIG. 00 — OVERVIEW', hardware: 'Motherboard', cam: [0, 27, 31], look: [0, 0, 2], panelSide: 'none' },
-  { id: 'about', label: 'About', ref: 'U1', title: 'U1 — about me', fig: 'FIG. 01 — PROCESSOR', hardware: 'CPU', cam: [-15, 8.5, 3.5], look: [-16, 0.6, -8], panelSide: 'left' },
-  { id: 'skills', label: 'Skills', ref: 'U2', title: 'What I can do', fig: 'FIG. 02 — MEMORY', hardware: 'RAM', cam: [-2, 6.6, 12.5], look: [-2, 5.6, -8.6], panelSide: 'left' },
-  { id: 'projects', label: 'Work', ref: 'U3', title: 'Things I’ve shipped', fig: 'FIG. 03 — STORAGE', hardware: 'Drives', cam: [12.5, 10, 16.5], look: [12.5, 1.8, -1], panelSide: 'left' },
-  { id: 'experience', label: 'Experience', ref: 'BUS1', title: 'Where I’ve been', fig: 'FIG. 04 — BUS', hardware: 'Data bus', cam: [-10, 7.5, 25], look: [-10, 0.3, 12], panelSide: 'left' },
-  { id: 'contact', label: 'Contact', ref: 'P1', title: 'Say hi', fig: 'FIG. 05 — I/O', hardware: 'Network port', cam: [42, 7.5, 20.5], look: [28.5, 1.4, 14], panelSide: 'left' },
-  { id: 'shutdown', label: 'Power', ref: 'SW1', title: 'That’s the board.', fig: 'FIG. 06 — POWER', hardware: 'Power switch', cam: [0, 46, 42], look: [0, 0, 0], panelSide: 'none' },
+type SectionId = keyof typeof ui.sections;
+type Station = Omit<SectionDef, keyof SectionCopy>;
+
+const STATIONS: Station[] = [
+  { id: 'hero', ref: 'J1', fig: 'FIG. 00 — OVERVIEW', hardware: 'Motherboard', cam: [0, 27, 31], look: [0, 0, 2], panelSide: 'left' },
+  { id: 'about', ref: 'U1', fig: 'FIG. 01 — PROCESSOR', hardware: 'CPU', cam: [-15, 8.5, 3.5], look: [-16, 0.6, -8], panelSide: 'left' },
+  { id: 'skills', ref: 'U2', fig: 'FIG. 02 — MEMORY', hardware: 'RAM', cam: [-2, 6.6, 12.5], look: [-2, 5.6, -8.6], panelSide: 'left' },
+  { id: 'projects', ref: 'U3', fig: 'FIG. 03 — STORAGE', hardware: 'Drives', cam: [12.5, 10, 16.5], look: [12.5, 1.8, -1], panelSide: 'left' },
+  { id: 'experience', ref: 'BUS1', fig: 'FIG. 04 — BUS', hardware: 'Data bus', cam: [-10, 7.5, 25], look: [-10, 0.3, 12], panelSide: 'left' },
+  { id: 'contact', ref: 'P1', fig: 'FIG. 05 — I/O', hardware: 'Network port', cam: [42, 7.5, 20.5], look: [28.5, 1.4, 14], panelSide: 'left' },
+  { id: 'shutdown', ref: 'SW1', fig: 'FIG. 06 — POWER', hardware: 'Power switch', cam: [0, 46, 42], look: [0, 0, 0], panelSide: 'left' },
 ];
+
+export const SECTIONS: SectionDef[] = STATIONS.map((s) => ({ ...s, ...ui.sections[s.id] }));
 
 export const SECTION_COUNT = SECTIONS.length;
 export const sectionIndexById = (id: string) => SECTIONS.findIndex((s) => s.id === id);

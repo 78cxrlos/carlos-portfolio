@@ -11,7 +11,9 @@ import { playSound } from '../hooks/useSound';
 import { siteContent } from '../content/siteContent';
 import { createShimmerMaterial } from './shaders';
 import { createMarkingTexture, createMetalTextures } from './textures';
-import { SceneHint, stationProximity, useFontsReady } from './helpers';
+import { SceneHint, hideSceneTip, showSceneTip, stationProximity, useFontsReady } from './helpers';
+import { ui } from '../content/uiStrings';
+
 import { Fan } from './Fan';
 
 const CORE_COLS = 4;
@@ -238,10 +240,13 @@ export function Cpu() {
                 hovered.current = i;
                 setCursor('hover');
                 playSound('hover');
+                showSceneTip(e, `${f.label.split(' · ').pop()}. ${ui.hints.cpu}`);
               }}
+              onPointerMove={(e) => showSceneTip(e, `${f.label.split(' · ').pop()}. ${ui.hints.cpu}`)}
               onPointerOut={() => {
                 hovered.current = null;
                 setCursor('default');
+                hideSceneTip();
               }}
             >
               <planeGeometry args={[CORE_W, CORE_D]} />
@@ -271,7 +276,7 @@ export function Cpu() {
         </mesh>
       </Billboard>
       <Fan position={[6.3, 0, -3.6]} radius={1.25} heatFactor={14} />
-      <SceneHint id="cpu-core" section={1} position={[0, 2.2, 2.8]} text="Click a core. Hold the CPU to overclock it." />
+      <SceneHint id="cpu-core" section={1} position={[0, 2.2, 2.8]} text={ui.hints.cpu} />
     </group>
   );
 }

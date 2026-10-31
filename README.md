@@ -1,6 +1,8 @@
 # Inside the Machine
 
-A 3D portfolio laid out on a circuit board sitting on a workbench under a desk lamp. It starts at a power switch, boots like a BIOS, then the camera moves across the board on a slider rig, past the CPU, RAM, drives and data bus to the network port. Each part of the board is one portfolio section.
+A 3D portfolio laid out on a circuit board sitting on a workbench under a desk lamp. The camera moves across the board past the CPU, RAM, drives and data bus to the network port. Each part of the board is one portfolio section.
+
+**Content first, 3D second.** Every piece of information can be reached with plain buttons, text links and normal scrolling. A first-time visitor chooses between the interactive 3D version and a simple, large-text page, and can switch at any time. The terminal, search, draggable parts, easter eggs and hold-to-overclock are optional extras. Nobody needs them to use the site. See [USABILITY_CHECKLIST.md](USABILITY_CHECKLIST.md) for the tasks a first-time visitor should be able to do without help.
 
 Every 3D object is built in code: geometry, instancing, GLSL shaders and canvas textures. There are no model, texture, HDR or audio files, so the 3D scene works offline. The only network requests are for Google Fonts, and the page falls back to system fonts if those fail.
 
@@ -13,7 +15,8 @@ Every 3D object is built in code: geometry, instancing, GLSL shaders and canvas 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm run build      # type-check + production build into dist/
+npm run build      # contrast check + type-check + production build into dist/
+npm run check:contrast   # WCAG AA contrast check for both themes on its own
 npm run preview    # serve the production build
 ```
 
@@ -25,16 +28,20 @@ Requires Node 18+.
 
 **All personal content lives in [`src/content/siteContent.ts`](src/content/siteContent.ts).** The 3D scene, the HTML panels, the terminal, the command palette and the Simple View all read from it. Nothing personal is hardcoded anywhere else. A comment at the top of the file explains every field.
 
+**All interface wording lives in [`src/content/uiStrings.ts`](src/content/uiStrings.ts).** This covers buttons, menu labels, the help panel, the tour, form messages and error messages. It is written at about a 6th-grade reading level: short sentences, buttons that say what they do, and hardware words only as small captions next to a plain label. Please keep that style when you edit it.
+
 | Field | Where it shows up |
 |---|---|
-| `person` | Hero title, navbar logo, BIOS log, CPU heat-spreader label, footer |
+| `person` | Welcome screen, hero, navbar logo, start-up log, CPU heat-spreader label, footer. `plainIntro` is the one plain sentence shown on the welcome screen |
 | `about.intro` / `about.facts` | About panel. Each fact (up to 8) becomes a clickable **CPU core** |
 | `skills` | Each category becomes a **RAM stick** and a filter button. Each skill becomes a chip, its marking showing `level` (1–5) |
 | `projects` | Each one becomes a **drive** standing in the rack, plus a datasheet panel. Optional `partNo`, `status`, `specs`, `revisions` fill the datasheet |
 | `experience` | Each entry becomes a **carriage** riding the rail on the data bus, plus a timeline item |
-| `contact.socials` | Each one becomes a draggable **plug** at the network port |
+| `contact.email` | Shown as text with a **Copy** button, plus a big **Email me** button |
+| `contact.phone` / `contact.whatsapp` | Optional. When set, big **Call** and **WhatsApp** buttons appear. Both are empty for now, so the buttons are hidden |
+| `contact.socials` | Each one becomes a draggable **plug** at the network port and a link in "Other places to find me" |
 | `contact.formEndpoint` | Leave it empty to open a `mailto:` draft. Set it to a Formspree/Getform/API URL to POST JSON |
-| `resumeUrl` | Every Resume button. Replace `public/resume.pdf` (currently a placeholder) |
+| `resumeUrl` | Every **Download my CV** button (menu, home panel, end panel, Simple View footer). Replace `public/resume.pdf` (currently a placeholder) |
 | `easterEggs` | Text shown by the hidden secrets |
 | `bench` | Handwriting on the tape and sticky note, the QC serial, the logo initials in the silkscreen |
 | `footerNote` | One dry line in the footer |
@@ -110,14 +117,14 @@ Exactly one system, defined in [`src/lib/themes.ts`](src/lib/themes.ts):
 | copper | `#B8693A` | traces, labels |
 | safety orange | `#FF5A1F` | the **only** accent: active states, link underlines, the drive-activity LED |
 
-No pure black or pure white is used anywhere. For small orange *text* on paper, the theme uses a darker `accentText` (`#B33A0C`, 5:1 contrast on bone).
+No pure black or pure white is used, except in **High contrast** mode (`HIGH_CONTRAST` in `themes.ts`). For small orange *text* on paper, the theme uses a darker `accentText` (`#B33A0C`, 4.7:1 on bone). `npm run check:contrast` prints every pair and its ratio.
 
 ### Themes
 
 There are two, and both keep the same board:
 
-- **Bench:** daylight. Paper UI (bone sheets with ink), a brighter lamp, a lighter bench.
-- **Night shift:** a dark UI (`#1C1A17` sheets with bone text), a dimmer and warmer lamp, a near-black bench.
+- **Light** (`bench`): daylight. Paper UI (bone sheets with ink), a brighter lamp, a lighter bench.
+- **Dark** (`night`): a dark UI (`#1C1A17` sheets with bone text), a dimmer and warmer lamp, a near-black bench.
 
 The choice is saved in `localStorage` (`itm:theme`). Each theme sets the UI colors (`bg`, `surface`, `ink`, `muted`, `overlay`, `accent`, `accentText`) and the lighting (`lamp`, `lampColor`, `fill`, `ambient`, `exposure`, `bench`).
 
@@ -141,10 +148,10 @@ To change them, swap the `<link>` in `index.html` and the `fontFamily` entries i
 ## UI language
 
 - **Sheets:** panels are flat printed datasheets (`.sheet` in `src/styles/index.css`) with a 1px ink border, two corner registration marks, and paper grain. The grain is only on paper surfaces, never full-screen.
-- **Buttons:** offset-shadow buttons that press down (`.btn`, `.btn-solid`, `.btn-quiet`).
+- **Buttons:** offset-shadow buttons that press down (`.btn`, `.btn-solid`, `.btn-big`, `.btn-quiet`), written in sentence case so they're easy to read.
 - **Projects:** open as component datasheets with a part number, a specs table, "absolute maximum ratings" for the stack, a revision history and figures. Use the optional `partNo`, `status`, `specs` and `revisions` fields in `siteContent.ts`.
 - **Toasts:** small printed labels.
-- **Achievements:** an inspection log with ink "PASSED" stamps.
+- **Achievements:** a list with ink "Found" stamps (Menu → Achievements).
 - **Cursor:** the system one. Interactive 3D objects switch it to `pointer`, `grab` or `grabbing`.
 - **Motion:** one vocabulary (`src/lib/motion.ts`), using power3.out and the occasional gentle overshoot.
   - Text reveals are masked line slides (`RevealText`).
@@ -164,13 +171,14 @@ Stations are defined in [`src/lib/sections.ts`](src/lib/sections.ts):
 
 - `cam` is where the camera sits. `look` is the point it looks at.
 - [`CameraRig.tsx`](src/scene/CameraRig.tsx) builds two centripetal Catmull-Rom splines, one through every `cam` and one through every `look`. Both are sampled with `getPoint(t)`, which is indexed by control point, so station *i* lands exactly at `t = i / (N-1)`.
-- `#journey` is a tall spacer element (120vh per section, `VH_PER_SECTION` in `App.tsx`). GSAP ScrollTrigger maps its scroll progress (0–1) to `runtime.scroll` and snaps gently to the nearest station.
-- Every frame the camera eases toward that value (exponential damping), so fast flicks still give a smooth flight. It then:
+- `#journey` is a tall spacer element (120vh per section, `VH_PER_SECTION` in `App.tsx`). GSAP ScrollTrigger maps its scroll progress (0–1) to `runtime.scroll`. There is **no scroll snapping or scroll-jacking**: the page scrolls exactly as the visitor scrolls it.
+- The **Next section / Back** buttons and the progress dots call `scrollToSection(i)`, which scrolls the page with a slow `sine.inOut` ease (1.5–3.2 s).
+- Every frame the camera follows that value through a slow, critically damped spring (no overshoot). It then:
   - pulls back on narrow or portrait screens
-  - pans so the object sits beside the HTML panel (or above the mobile bottom sheet)
-  - adds mouse parallax and an idle sway
-  - blends in the boot "drop" from high above the board
-- With `prefers-reduced-motion`, the camera jumps straight to the active station with no flight.
+  - pans so the object sits beside the text panel (or above it on phones)
+  - adds a very small mouse parallax (mouse only, never on touch). The old handheld sway was removed to avoid motion sickness.
+  - blends in the start-up "drop" from above the board
+- With reduced motion (OS setting, the **Reduce motion** switch, or the default on touch devices), the camera cuts to each station and a short fade (`MotionFade`) softens the cut.
 
 To add a section: add a station to `SECTIONS`, a panel component to `PANELS` in `SectionPanels.tsx`, and optionally a 3D component in `Scene.tsx`. Hardware positions live in `ANCHOR_POINTS` (same file).
 
@@ -188,8 +196,12 @@ src/
     Cpu.tsx Ram.tsx Gpu.tsx Storage.tsx DataBus.tsx NetworkPort.tsx Parts.tsx Fan.tsx
     Particles.tsx Lights.tsx Effects.tsx
     shaders.ts textures.ts helpers.tsx anchors.ts
-  components/                ← DOM layer (Navbar, HUD, panels, terminal, palette, SimpleView…)
-  hooks/                     ← useScrollProgress, useKeyboard, useTheme, useSound, usePerformance
+  content/uiStrings.ts       ← all interface wording (buttons, help, tour, errors)
+  components/                ← DOM layer: Welcome, Navbar, HUD (bottom bar), SectionPanels,
+                               SimpleView, Help (help panel + tour), Dialog, Settings,
+                               ContactBlock, ProjectPanel, terminal, palette…
+  hooks/                     ← useScrollProgress, useKeyboard, useTheme, useSound, usePerformance, useModal
+scripts/check-contrast.mjs   ← WCAG AA check, runs before every build
   store/                     ← Zustand store (UI state) + runtime.ts (per-frame mutable state)
   lib/                       ← sections, themes, commands, fuzzy search, audio synth, power
 ```
@@ -208,7 +220,7 @@ Performance notes:
 
 ## Deploy
 
-Routing is hash-based (`#/`, `#/simple`; unknown hash routes show the kernel-panic 404), so any static host works.
+Routing is hash-based (`#/`, `#/simple`; unknown hash routes show a friendly "Page not found" page), so any static host works.
 
 **GitHub Pages (set up):** `.github/workflows/deploy.yml` builds the site and publishes `dist/` on every push to `main`. The repo is `78cxrlos/carlos-portfolio`, so the site is served at **https://78cxrlos.github.io/carlos-portfolio/** (`base` in `vite.config.ts`).
 
@@ -221,17 +233,69 @@ Share `https://78cxrlos.github.io/carlos-portfolio/#/simple` with recruiters for
 
 ---
 
-## Things to try
+## How visitors use it
 
-- Press SW1 or hit <kbd>Enter</kbd> to boot. Skip is top right, or press <kbd>Esc</kbd>.
-- Scroll, use <kbd>↑</kbd>/<kbd>↓</kbd>, or click the reference designators on the rail.
-- <kbd>Ctrl/⌘ K</kbd> opens the index (fuzzy search). <kbd>`</kbd> opens the terminal (Tab completes, ↑/↓ for history).
-- Click the board: a signal edge runs out through the copper from where you clicked.
-- Throw the loose screws.
-- Click a CPU core. Hold the CPU until it throttles. Watch the red fault LED and the fan.
-- Hover chips on the RAM sticks. Filter by area and the other sticks reseat themselves.
-- Hover a drive to lift it out of the rack, click it for its datasheet. Hover a carriage on the rail to stop it.
-- Drag a plug into its port and watch the jack's link LEDs come on. Click a fan to spin it up and watch it coast down.
-- Switch between Bench and Night shift. Turn the sound on for clicks, relays and fan hum.
-- Easter eggs: the Konami code, an unmarked chip in a far corner of the board, and `sudo` in the terminal.
-- Power off at the very end.
+**First visit.** A welcome screen shows the name, one plain sentence and two big buttons: **Explore the interactive version** and **View the simple version**. Simple is listed first and marked "Recommended for this device" on:
+- small touch screens
+- devices with a weak GPU or little memory (software renderers, old mobile GPUs, ≤ 2 GB RAM or ≤ 2 CPU cores)
+- `prefers-reduced-motion`
+- slow or data-saver connections
+
+The choice is remembered (`localStorage` key `itm:view`). `#/simple` is a shareable link straight to the Simple View.
+
+**3D version.**
+- A loading screen shows a percentage and always offers **Use the simple version instead**. After 15 seconds it adds a plain "taking longer than usual" message.
+- A start-up animation of about 3 seconds follows, with a big **Skip** button (or Esc). It plays once per visit and is skipped entirely when motion is reduced.
+- A 4-step tour runs on the first visit. It is skippable and can be replayed from **Menu → How to use this site** or from **Help**.
+- A fixed bar at the bottom has **Back**, **Next section**, "Section 2 of 7: About", clickable labelled dots and **Back to top**. Pressing **Next section** alone walks through the whole site.
+- Interactive parts of the board show a word label with a pulsing outline the first time ("Click a drive to see a project"). They also have a tooltip on hover, or on touch-and-hold for the drives.
+
+**Simple View.**
+- It is a single column with large text, and has small effects that keep it lively without hiding anything:
+  - a reading-progress bar under the menu
+  - an animated circuit in the header, a nod to the board
+  - count-up numbers (projects, skills, places) that jump to their sections
+  - sections that ease in as you scroll, with an accent rule drawing under each heading
+  - skill bars that fill, fact and project cards that lift under the mouse, project colour stripes and tech tags
+  - a timeline whose dots light up
+- Everything is CSS keyed to `html[data-motion='full']` (the `.sv-*` and `[data-reveal]` rules in `index.css`). With **Reduce motion** on, or the OS setting, the page is static and fully visible.
+- Touch devices keep these gentle effects by default. Only the 3D camera defaults to reduced motion on touch (`computeGentleMotion` vs `computeReducedMotion` in the store).
+
+**Everywhere.**
+- The top menu shows plain labels (Home, About, Skills, Projects, Experience, Contact) with the hardware word as a small caption.
+- **Help** opens short instructions for mouse, touch and keyboard. Pressing <kbd>?</kbd> opens it too.
+- **Accessibility** holds the text-size control (A- / A / A+, 90–150%), **High contrast** and **Reduce motion**, plus Light/Dark colours and sound. These choices are saved in `itm:prefs`.
+- **Menu** holds everything: all sections, all projects, the version switch, Download my CV, accessibility, and the extras.
+- Every panel closes with a big **Close** button, by tapping outside, or with Esc. While a panel is open only the panel scrolls.
+- Turning the board off asks for confirmation first.
+
+**Readability.**
+- Body text is 18px with a line height of 1.6.
+- A PostCSS step (`postcss.config.js`) turns every font size into rem, so the text-size control scales all text, and raises anything under 14px to 14px.
+- Buttons are at least 48px tall and every tap target is at least 44×44px.
+- Keyboard focus shows a thick ring.
+- `npm run build` fails if any theme colour pair drops below WCAG AA (`scripts/check-contrast.mjs`).
+
+**If something fails.**
+- No WebGL: the Simple View opens with a short explanation.
+- If the 3D scene crashes, a plain message offers **Try again** or **Use the simple version**.
+- Unknown links show a friendly "Page not found" page.
+
+### Extras (optional, never needed)
+
+Two labelled buttons sit in a free corner of the screen: **Things to try 3/15** and **Terminal**. In the 3D version they are bottom right on wider screens. In the Simple View they are bottom left on very wide screens. They are also in **Menu → Extras, just for fun** and in a "Just for fun" box at the end of both versions.
+
+- **Things to try** is a checklist of 15 fun things to do on the site, each with a plain "how to do it" line, a Done / Not yet stamp and, where useful, a **Take me there** button. 3D-only items say so in the Simple View.
+  - The three **secret** ones (the Konami code, the mystery chip, `sudo` in the terminal) show only a gentle **clue**. A **Show a bigger hint** button reveals the exact steps for anyone who gets stuck.
+  - All wording, clues and answers are in `ui.extras.items` in `src/content/uiStrings.ts`. Reorder, reword or remove items there.
+  - Progress is saved in `localStorage` (`itm:achievements`).
+- **Terminal** (or <kbd>`</kbd>): type commands like on an old computer. A row of **tap to run** buttons (help, about, projects, contact, todo) means nobody has to know what to type.
+  - `todo` lists the checklist with clues. `hint <name>` (for example `hint chip`) prints the exact answer for a secret.
+  - Tab completes and ↑/↓ recall history.
+- <kbd>Ctrl/⌘ K</kbd> opens search (also in **Menu → Search the site**).
+- Things to find on the board:
+  - Click the board: a signal runs out through the copper from where you clicked.
+  - Throw the loose screws. Drag a plug into its port. Click a fan to spin it up.
+  - In About, open "Just for fun: overclock the processor" and press and hold. Holding the CPU on the board does the same.
+  - The mystery chip is in the far back-right corner of the board. It has an invisible, larger click area so it's fair to hit.
+- Turn the board off at the very end. It asks first.

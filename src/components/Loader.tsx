@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
+import { ui } from '../content/uiStrings';
+import { lockPageScroll } from '../hooks/useModal';
 
 /**
  * Asset/scene progress. Everything is procedural, so drei's useProgress
@@ -19,25 +21,42 @@ export function useBootProgress() {
   return ready ? 100 : Math.min(Math.max(assetProgress, 1), fake);
 }
 
-/** Boot-loader styled overlay shown while the 3D scene warms up (revisits skip the boot sequence). */
+/**
+ * Shown while the 3D version downloads and warms up. Says what is happening,
+ * shows real progress, and always offers the simple version as a way out.
+ */
 export function Loader() {
   const ready = useStore((s) => s.sceneReady);
-  const pct = useBootProgress();
+  const setSimpleView = useStore((s) => s.setSimpleView);
+  const pct = Math.round(useBootProgress());
   const [gone, setGone] = useState(false);
+  const [slow, setSlow] = useState(false);
   useEffect(() => {
-    if (!ready) return;
-    const t = window.setTimeout(() => setGone(true), 500);
+    if (ready) {
+      const t = window.setTimeout(() => setGone(true), 300);
+      return () => window.clearTimeout(t);
+    }
+    const t = window.setTimeout(() => setSlow(true), 15000);
     return () => window.clearTimeout(t);
   }, [ready]);
+  useEffect(() => (gone ? undefined : lockPageScroll()), [gone]);
   if (gone) return null;
   return (
-    <div className={`fixed inset-0 z-[90] flex items-end bg-offblack p-8 transition-opacity duration-500 ${ready ? 'opacity-0' : 'opacity-100'}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label="Loading the board">
-      <div className="w-[min(320px,80vw)] font-mono text-bone">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-bone/60">Warming up the soldering iron</p>
-        <div className="mt-3 h-px bg-bone/25">
-          <div className="h-px bg-bone transition-[width] duration-150" style={{ width: `${pct}%` }} />
+    <div className={`fixed inset-0 z-[90] grid place-items-center bg-bg px-4 transition-opacity duration-300 ${ready ? 'opacity-0' : 'opacity-100'}`} role="dialog" aria-modal="true" aria-labelledby="loading-title">
+      <div className="sheet w-full max-w-[560px] p-6 sm:p-8">
+        <p id="loading-title" className="font-serif text-[22px] leading-[1.5]">
+          {ui.loading.title}
+        </p>
+        <div className="mt-5 h-4 border-2 border-ink" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={ui.loading.percent(pct)}>
+          <div className="h-full bg-ink transition-[width] duration-150" style={{ width: `${pct}%` }} />
         </div>
-        <p className="mt-2 text-[11px] tabular-nums text-bone/50">{Math.round(pct)}%</p>
+        <p className="mt-2 font-mono text-[16px] tabular-nums" aria-live="polite">
+          {ui.loading.percent(pct)}
+        </p>
+        {slow && <p className="mt-3 text-[18px] leading-[1.6]">{ui.loading.slow}</p>}
+        <button type="button" className="btn btn-big mt-6 w-full" onClick={() => setSimpleView(true)}>
+          {ui.loading.useSimple}
+        </button>
       </div>
     </div>
   );

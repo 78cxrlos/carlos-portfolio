@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { runtime } from '../store/runtime';
+import { ui } from '../content/uiStrings';
 
 /** True if the browser can create a WebGL context. */
 export function detectWebGL(): boolean {
@@ -37,11 +38,12 @@ export function usePerformance() {
     if (!detectWebGL()) {
       const s = useStore.getState();
       s.setWebglOk(false);
-      s.toast({ tone: 'warn', title: 'No WebGL here', body: 'Showing the plain page instead. Same content.' });
+      useStore.setState({ welcomeOpen: false });
+      s.toast({ tone: 'info', title: ui.nav.toSimpleLong, body: ui.errors.noWebgl });
     }
 
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onMq = () => useStore.setState({ reducedMotion: mq.matches });
+    const onMq = () => useStore.getState().setOsReducedMotion(mq.matches);
     mq.addEventListener?.('change', onMq);
 
     let idleTimer = 0;

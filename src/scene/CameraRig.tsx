@@ -22,18 +22,17 @@ const UP = new THREE.Vector3(0, 1, 0);
  * value the scroll progress has when section i is centered.
  *
  * Each frame:
- *  1. camT follows the scroll progress through a slightly under-damped
- *     spring (like a camera on a slider rig: it has mass, eases out, and
- *     settles with the smallest overshoot). Reduced motion: camT jumps
- *     straight to the active station — no flight at all.
+ *  1. camT follows the scroll progress through a slow, critically damped
+ *     spring (like a camera on a slider rig: it has mass and eases in and
+ *     out, with no overshoot). Reduced motion: camT jumps straight to the
+ *     active station (MotionFade softens the cut) — no flight at all.
  *  2. Narrow/portrait screens pull the camera back along its view direction
  *     so wide objects still fit.
  *  3. Stations with an HTML panel pan the frame (camera AND target together,
  *     so perspective is unchanged) so the object sits beside the panel on
  *     desktop or above the bottom sheet on mobile.
- *  4. Subtle pointer parallax, plus a tiny "handheld" drift whose amplitude
- *     follows the rig's speed — it breathes while moving and settles when
- *     the camera is parked.
+ *  4. Very subtle pointer parallax (mouse only). No handheld sway: steady
+ *     framing is calmer and avoids motion sickness.
  *  5. During the boot "drop", the result is blended with a point high above
  *     the board.
  */
@@ -57,7 +56,6 @@ export function CameraRig() {
       parallax: new THREE.Vector2(),
       smoothLook: new THREE.Vector3(0, 0, 0),
       vel: 0,
-      drift: 0,
     }),
     [],
   );
@@ -70,9 +68,9 @@ export function CameraRig() {
       runtime.camT = target;
       v.vel = 0;
     } else {
-      // spring: stiffness K, damping a touch under critical (tiny overshoot)
-      const K = 9;
-      const C = 2 * Math.sqrt(K) * 0.92;
+      // spring: low stiffness K (slow), critically damped (no overshoot)
+      const K = 3.2;
+      const C = 2 * Math.sqrt(K);
       const steps = 2;
       const h = d / steps;
       for (let i = 0; i < steps; i++) {
@@ -111,18 +109,10 @@ export function CameraRig() {
     v.look.add(v.pan);
 
     // subtle parallax toward the mouse
-    v.parallax.x += (runtime.pointer.x - v.parallax.x) * damp(1.8, d);
-    v.parallax.y += (runtime.pointer.y - v.parallax.y) * damp(1.8, d);
-    const pAmt = s.reducedMotion || s.isTouch ? 0 : dist * 0.012;
+    v.parallax.x += (runtime.pointer.x - v.parallax.x) * damp(1.2, d);
+    v.parallax.y += (runtime.pointer.y - v.parallax.y) * damp(1.2, d);
+    const pAmt = s.reducedMotion || s.isTouch ? 0 : dist * 0.005;
     v.pos.addScaledVector(v.right, v.parallax.x * pAmt).addScaledVector(v.up, v.parallax.y * pAmt * 0.6);
-    // handheld drift: amplitude rises with rig speed, decays slowly when parked
-    v.drift += (Math.min(1, Math.abs(v.vel) * 10) - v.drift) * damp(v.drift < Math.abs(v.vel) * 10 ? 4 : 0.8, d);
-    if (!s.reducedMotion) {
-      const et = state.clock.elapsedTime;
-      const amp = dist * 0.0035 * (0.25 + v.drift);
-      v.pos.addScaledVector(v.right, (Math.sin(et * 0.9) + Math.sin(et * 2.3 + 1.3) * 0.4) * amp);
-      v.pos.addScaledVector(v.up, (Math.sin(et * 1.1 + 0.5) + Math.sin(et * 2.9) * 0.35) * amp * 0.7);
-    }
 
     // boot drop
     if (runtime.intro < 1) {
@@ -131,7 +121,7 @@ export function CameraRig() {
     }
 
     camera.position.copy(v.pos);
-    v.smoothLook.lerp(v.look, s.reducedMotion ? 1 : damp(6, d));
+    v.smoothLook.lerp(v.look, s.reducedMotion ? 1 : damp(4, d));
     camera.lookAt(v.smoothLook);
     focusTarget.copy(v.smoothLook);
 

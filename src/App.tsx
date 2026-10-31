@@ -23,6 +23,11 @@ import { Loader } from './components/Loader';
 import { BootSequence } from './components/BootSequence';
 import { SimpleView } from './components/SimpleView';
 import { SegFault } from './components/SegFault';
+import { Welcome } from './components/Welcome';
+import { HelpPanel, Tour } from './components/Help';
+import { ConfirmDialog } from './components/Dialog';
+import { ExtrasDock } from './components/Extras';
+import { MotionFade, SceneErrorBoundary, SceneTooltip } from './components/SceneUi';
 
 // three.js and the whole scene are code-split: Simple View never downloads them.
 const Scene = lazy(() => import('./scene/Scene'));
@@ -30,8 +35,13 @@ const Scene = lazy(() => import('./scene/Scene'));
 /** vh of scroll per section — more = slower, more cinematic flight. */
 const VH_PER_SECTION = 120;
 
+/**
+ * The 3D version: loading screen (with a way out) → short start-up animation
+ * (skippable, once per visit) → the board, with a fixed Back / Next bar.
+ */
 function Journey() {
   const booted = useStore((s) => s.booted);
+  const sceneReady = useStore((s) => s.sceneReady);
   const [initiallyBooted] = useState(() => useStore.getState().booted);
   useScrollProgress(true);
 
@@ -40,24 +50,26 @@ function Journey() {
     if (initiallyBooted) runtime.intro = 1;
   }, [initiallyBooted]);
 
-  // No scrolling until the machine has booted.
+  // Returning visitors in the same tab still get the tour if they never saw it.
   useEffect(() => {
-    document.documentElement.style.overflow = booted ? '' : 'hidden';
-    return () => {
-      document.documentElement.style.overflow = '';
-    };
-  }, [booted]);
+    const s = useStore.getState();
+    if (initiallyBooted && sceneReady && !s.tourSeen) s.setTour(true);
+  }, [initiallyBooted, sceneReady]);
 
   return (
     <>
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
+      <SceneErrorBoundary>
+        <Suspense fallback={null}>
+          <Scene />
+        </Suspense>
+      </SceneErrorBoundary>
+      <MotionFade />
       <div id={JOURNEY_ID} aria-hidden style={{ height: `${100 + (SECTION_COUNT - 1) * VH_PER_SECTION}vh` }} />
-      <Navbar />
-      <HUD />
       <SectionPanels />
-      {booted ? <Loader /> : <BootSequence />}
+      <HUD />
+      <SceneTooltip />
+      <Loader />
+      {sceneReady && !booted && <BootSequence />}
     </>
   );
 }
@@ -65,17 +77,22 @@ function Journey() {
 function Machine() {
   const simpleView = useStore((s) => s.simpleView);
   const webglOk = useStore((s) => s.webglOk);
+  const welcomeOpen = useStore((s) => s.welcomeOpen);
   const simple = simpleView || !webglOk;
+
+  // Warm the 3D download while the visitor reads the welcome screen (not on slow/weak devices).
+  useEffect(() => {
+    if (welcomeOpen && !useStore.getState().simpleReason && webglOk) void import('./scene/Scene');
+  }, [welcomeOpen, webglOk]);
+
   return (
     <>
-      {simple ? (
-        <>
-          <Navbar />
-          <SimpleView />
-        </>
-      ) : (
-        <Journey />
-      )}
+      <Navbar />
+      {welcomeOpen ? <Welcome /> : simple ? <SimpleView /> : <Journey />}
+      {!welcomeOpen && <ExtrasDock />}
+      <HelpPanel />
+      <Tour />
+      <ConfirmDialog />
       <ProjectPanel />
       <Terminal />
       <CommandPalette />
@@ -94,6 +111,8 @@ function SimpleRoute() {
 }
 
 function SkipLink() {
+  const welcomeOpen = useStore((s) => s.welcomeOpen);
+  if (welcomeOpen) return null; // the welcome screen is already just the main content
   return (
     <a
       href="#main"
@@ -103,9 +122,9 @@ function SkipLink() {
         target?.setAttribute('tabindex', '-1');
         target?.focus();
       }}
-      className="sr-only z-[100] border border-ink bg-surface px-4 py-2 font-mono text-sm text-ink focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
+      className="sr-only z-[100] border-2 border-ink bg-surface px-4 py-3 font-mono text-[16px] text-ink focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
     >
-      Skip to content
+      Skip to main content
     </a>
   );
 }

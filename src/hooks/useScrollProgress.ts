@@ -18,7 +18,7 @@ function journeyMetrics() {
   return { top, range };
 }
 
-/** Smoothly fly the camera to section `i` by scrolling the page. */
+/** Fly the camera to section `i` by scrolling the page: slow, eased in and out. */
 export function scrollToSection(i: number, opts: { instant?: boolean } = {}) {
   const m = journeyMetrics();
   const clamped = Math.max(0, Math.min(SECTION_COUNT - 1, i));
@@ -28,8 +28,8 @@ export function scrollToSection(i: number, opts: { instant?: boolean } = {}) {
   const distance = Math.abs(clamped - useStore.getState().section);
   gsap.to(window, {
     scrollTo: { y, autoKill: true },
-    duration: opts.instant || reduced ? 0 : Math.min(2.2, 0.9 + distance * 0.3),
-    ease: 'power2.inOut',
+    duration: opts.instant || reduced ? 0 : Math.min(3.2, 1.5 + distance * 0.35),
+    ease: 'sine.inOut',
     overwrite: true,
   });
 }
@@ -43,6 +43,9 @@ export function scrollToSectionId(id: string) {
  * Drives `runtime.scroll` (0..1) from the page scroll position through
  * ScrollTrigger and keeps the active section index in the store. The camera
  * reads runtime.scroll and applies its own damping (see CameraRig).
+ *
+ * There is deliberately no scroll snapping or scroll-jacking: the page
+ * scrolls exactly the way the visitor scrolls it.
  */
 export function useScrollProgress(enabled: boolean) {
   const setSection = useStore((s) => s.setSection);
@@ -59,13 +62,6 @@ export function useScrollProgress(enabled: boolean) {
       onUpdate: (self) => {
         runtime.scroll = self.progress;
         setSection(Math.round(self.progress * (SECTION_COUNT - 1)));
-      },
-      // Gently settle on the nearest station after the user stops scrolling.
-      snap: {
-        snapTo: 1 / (SECTION_COUNT - 1),
-        duration: { min: 0.25, max: 0.8 },
-        delay: 0.25,
-        ease: 'power1.inOut',
       },
     });
     runtime.scroll = st.progress;

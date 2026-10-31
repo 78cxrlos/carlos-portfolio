@@ -9,7 +9,9 @@ import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
 import { siteContent, type Project } from '../content/siteContent';
 import { createPaperLabel } from './textures';
-import { SceneHint, useFontsReady } from './helpers';
+import { SceneHint, hideSceneTip, longPressSceneTip, showSceneTip, useFontsReady } from './helpers';
+import { ui } from '../content/uiStrings';
+
 
 const SPACING = 2.2;
 const RACK_H = 0.8;
@@ -73,13 +75,18 @@ function Drive({ project, index, total }: { project: Project; index: number; tot
           runtime.ledFlash = 1;
           playSound('hover');
           useStore.getState().markHint('cartridge');
+          showSceneTip(e, ui.hints.driveTip(project.title));
         }}
+        onPointerMove={(e) => showSceneTip(e, ui.hints.driveTip(project.title))}
+        onPointerDown={(e) => longPressSceneTip(e, ui.hints.driveTip(project.title))}
         onPointerOut={() => {
           setHovered(false);
           setCursor('default');
+          hideSceneTip();
         }}
         onClick={(e) => {
           e.stopPropagation();
+          hideSceneTip();
           playSound('click');
           runtime.ledFlash = 1;
           openProject(index);
@@ -108,7 +115,7 @@ function Drive({ project, index, total }: { project: Project; index: number; tot
         <cylinderGeometry args={[0.1, 0.1, 0.04, 12]} />
         <meshStandardMaterial color={PALETTE.steel} metalness={1} roughness={0.3} />
       </mesh>
-      {index === 0 && <SceneHint id="cartridge" section={3} position={[0, DRIVE_H / 2 + 0.4, 0]} text="Hover a drive. Click to read its datasheet." />}
+      {index === 0 && <SceneHint id="cartridge" section={3} position={[0, DRIVE_H / 2 + 0.4, 0]} text={ui.hints.drive} />}
     </group>
   );
 }

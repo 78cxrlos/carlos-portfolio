@@ -293,6 +293,10 @@ function HiddenChip() {
       >
         <boxGeometry args={[0.8, 0.16, 0.8]} />
         <meshStandardMaterial color="#141312" roughness={0.42} />
+        {/* invisible, larger hit area: the chip is tiny from far away, so give fingers and shaky hands a fair chance */}
+        <mesh visible={false}>
+          <boxGeometry args={[3, 0.6, 3]} />
+        </mesh>
       </mesh>
     </group>
   );
@@ -394,6 +398,7 @@ export function Board() {
     addRipple(e.point.x, e.point.z);
     runtime.ledFlash = 1;
     playSound('click');
+    useStore.getState().unlock('signal');
   };
 
   return (

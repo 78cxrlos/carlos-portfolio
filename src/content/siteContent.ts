@@ -18,6 +18,9 @@
  *               initials    Short logo text (2-3 chars).
  *               title       Your role, e.g. "Full-Stack Engineer".
  *               tagline     One-line pitch under your name in the hero.
+ *               plainIntro  ONE plain sentence about what you do, shown on the
+ *                           welcome screen and at the top of the page. Keep it
+ *                           simple enough for anyone to understand.
  *               location    Free text, shown in About.
  *               availability  Short status line (e.g. "Open to new roles").
  *  about        intro       Paragraphs shown in the About / CPU section.
@@ -43,18 +46,25 @@
  *                           gold, copper, sage) — the UI has one accent only.
  *  experience   Timeline entries (jobs AND education). `kind` picks the icon
  *               ('work' | 'education'). Shown as packets on the data bus.
- *  contact      email       Used for copy-to-clipboard + mailto fallback.
+ *  contact      email       Shown as text with a Copy button, plus "Email me".
+ *               phone       Optional. International format, e.g. "+254712345678".
+ *                           Shows a big "Call" button. Leave "" to hide it.
+ *               whatsapp    Optional. Digits only with country code, e.g.
+ *                           "254712345678". Shows a "WhatsApp" button. "" hides it.
  *               formEndpoint  Optional POST endpoint (Formspree, Getform, your
  *                           API...). If empty, the form opens a mailto: draft.
  *               socials     Each becomes a draggable plug at the network port.
  *                           `kind` picks the connector style.
- *  resumeUrl    Link for every "Resume" button. Put a PDF in /public and use
+ *  resumeUrl    Link for every "Download my CV" button. Put a PDF in /public and use
  *               "resume.pdf" (resolved against the site's base path), or a full URL.
  *  easterEggs   Text revealed by the hidden secrets (keep it fun).
  *  bench        Handwritten / printed bits on the board: the masking-tape
  *               label, the sticky note, the QC sticker serial and the tiny
  *               logo text printed in the silkscreen.
  *  footerNote   One dry line in the footer.
+ *
+ *  The words of the interface itself (buttons, help, error messages) are in
+ *  uiStrings.ts next to this file.
  * ============================================================================
  */
 
@@ -113,6 +123,7 @@ export interface SiteContent {
     initials: string;
     title: string;
     tagline: string;
+    plainIntro: string;
     location: string;
     availability: string;
   };
@@ -125,6 +136,8 @@ export interface SiteContent {
   experience: ExperienceEntry[];
   contact: {
     email: string;
+    phone: string;
+    whatsapp: string;
     formEndpoint: string;
     socials: SocialLink[];
   };
@@ -156,6 +169,7 @@ export const siteContent: SiteContent = {
     initials: 'MC',
     title: 'Full-stack developer, Python and React',
     tagline: 'I build web apps end to end: Flask or Express behind, React in front. Lately I break them on purpose, too.',
+    plainIntro: 'I am a web developer. I build websites and web apps, from the parts you see to the parts behind the scenes.',
     location: 'Nairobi, Kenya [check]',
     availability: 'Open to junior roles and internships [check]',
   },
@@ -392,6 +406,9 @@ export const siteContent: SiteContent = {
 
   contact: {
     email: 'mrkcarlos576@gmail.com',
+    // [check] add your numbers to show the "Call" and "WhatsApp" buttons.
+    phone: '',
+    whatsapp: '',
     formEndpoint: '',
     socials: [
       { id: 'github', label: 'GitHub', url: 'https://github.com/78cxrlos', handle: '@78cxrlos', kind: 'usbc' },

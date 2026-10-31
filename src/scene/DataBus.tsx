@@ -13,6 +13,8 @@ import { buildTraceGeometry, useTraceUniforms } from './Traces';
 import { createTraceMaterial } from './shaders';
 import { createMetalTextures, createPaperLabel } from './textures';
 import { SceneHint, useFontsReady } from './helpers';
+import { ui } from '../content/uiStrings';
+
 
 const LANES = 12;
 const BUS_W = 3.2;
@@ -177,7 +179,7 @@ export function DataBus() {
       {entries.map((e, i) => (
         <Carriage key={`${e.org}-${i}`} entry={e} index={i} total={entries.length} alu={alu} />
       ))}
-      <SceneHint id="packet" section={4} position={[-10, 2.2, ANCHORS.busStart.z]} text="Hover a carriage and it stops." />
+      <SceneHint id="packet" section={4} position={[-10, 2.2, ANCHORS.busStart.z]} text={ui.hints.bus} />
     </group>
   );
 }

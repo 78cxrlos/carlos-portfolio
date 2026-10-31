@@ -1,7 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import gsap from 'gsap';
 import { siteContent } from '../content/siteContent';
-import { useStore } from '../store/useStore';
+import { ui } from '../content/uiStrings';
 import { addRipple, runtime } from '../store/runtime';
 import { ANCHOR_POINTS } from '../lib/sections';
 import { playSound } from '../hooks/useSound';
@@ -18,9 +18,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function validate(f: Fields): Errors {
   const e: Errors = {};
-  if (f.name.trim().length < 2) e.name = 'A name, please. First name is fine.';
-  if (!EMAIL_RE.test(f.email.trim())) e.email = 'That email doesn’t look right.';
-  if (f.message.trim().length < 10) e.message = 'A little more than that — ten characters or so.';
+  if (f.name.trim().length < 1) e.name = ui.form.errName;
+  if (!EMAIL_RE.test(f.email.trim())) e.email = ui.form.errEmail;
+  if (f.message.trim().length < 10) e.message = ui.form.errMessage;
   return e;
 }
 
@@ -36,7 +36,6 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
   const [honeypot, setHoneypot] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const packetRef = useRef<HTMLSpanElement>(null);
-  const toast = useStore((s) => s.toast);
 
   const set = (k: keyof Fields) => (e: { target: { value: string } }) => {
     setFields((f) => ({ ...f, [k]: e.target.value }));
@@ -76,24 +75,22 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
       playSound('success');
       addRipple(ANCHOR_POINTS.port[0], ANCHOR_POINTS.port[2]);
       runtime.ledFlash = 1;
-      toast({ tone: 'success', title: 'Message sent', body: siteContent.contact.formEndpoint ? 'It’s in my inbox.' : 'Your mail app should have opened with it.' });
       setFields({ name: '', email: '', message: '' });
     } catch {
       setStatus('error');
       playSound('error');
-      toast({ tone: 'warn', title: 'Not sent', body: `Please email ${siteContent.contact.email} directly.` });
     }
   };
 
   if (status === 'sent') {
     return (
-      <div className="border border-ink p-4" role="status">
-        <span className="stamp text-[12px]">
-          <IconCheck width={14} height={14} /> Sent
-        </span>
-        <p className="mt-3 font-serif text-[17px] leading-snug">Got it. I’ll write back within two working days.</p>
-        <button type="button" className="btn-quiet mt-2" onClick={() => setStatus('idle')}>
-          Write another
+      <div className="border-2 border-ink p-4" role="status" tabIndex={-1} ref={(el) => el?.focus()}>
+        <p className="flex items-center gap-2 font-serif text-[22px] font-semibold">
+          <IconCheck width={22} height={22} /> {ui.form.sentTitle}
+        </p>
+        <p className="mt-2 text-[18px] leading-[1.6]">{siteContent.contact.formEndpoint ? ui.form.sentBodyEndpoint : ui.form.sentBodyMail}</p>
+        <button type="button" className="btn mt-3" onClick={() => setStatus('idle')}>
+          {ui.form.another}
         </button>
       </div>
     );
@@ -101,46 +98,41 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
 
   const err = (k: keyof Fields) =>
     errors[k] ? (
-      <p id={`err-${k}`} className="mt-1 font-mono text-[11px] text-accent-text">
+      <p id={`err-${k}`} className="mt-1 text-[16px] font-semibold text-accent-text">
         {errors[k]}
       </p>
     ) : null;
 
+  const field = (k: keyof Fields, label: string, input: JSX.Element) => (
+    <div>
+      <label htmlFor={`cf-${k}`} className="label">
+        {label}
+      </label>
+      {input}
+      {err(k)}
+    </div>
+  );
+  const aria = (k: keyof Fields) => ({ 'aria-invalid': !!errors[k], 'aria-describedby': errors[k] ? `err-${k}` : undefined });
+
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-3" aria-label="Contact form">
-      <div className={compact ? 'space-y-3' : 'grid gap-4 sm:grid-cols-[1fr_1.3fr]'}>
-        <div>
-          <label htmlFor="cf-name" className="caption block">
-            Your name
-          </label>
-          <input id="cf-name" className="field" autoComplete="name" value={fields.name} onChange={set('name')} aria-invalid={!!errors.name} aria-describedby={errors.name ? 'err-name' : undefined} />
-          {err('name')}
-        </div>
-        <div>
-          <label htmlFor="cf-email" className="caption block">
-            Email
-          </label>
-          <input id="cf-email" type="email" className="field" autoComplete="email" value={fields.email} onChange={set('email')} aria-invalid={!!errors.email} aria-describedby={errors.email ? 'err-email' : undefined} />
-          {err('email')}
-        </div>
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4" aria-label={ui.contact.formTitle}>
+      <div className={compact ? 'space-y-4' : 'grid gap-4 sm:grid-cols-2'}>
+        {field('name', ui.form.name, <input id="cf-name" className="field" autoComplete="name" value={fields.name} onChange={set('name')} {...aria('name')} />)}
+        {field('email', ui.form.email, <input id="cf-email" type="email" inputMode="email" className="field" autoComplete="email" value={fields.email} onChange={set('email')} {...aria('email')} />)}
       </div>
-      <div>
-        <label htmlFor="cf-msg" className="caption block">
-          Message
-        </label>
-        <textarea id="cf-msg" rows={compact ? 3 : 5} className="field resize-y" value={fields.message} onChange={set('message')} aria-invalid={!!errors.message} aria-describedby={errors.message ? 'err-message' : undefined} />
-        {err('message')}
-      </div>
+      {field('message', ui.form.message, <textarea id="cf-message" rows={compact ? 4 : 6} className="field resize-y" value={fields.message} onChange={set('message')} {...aria('message')} />)}
       <input tabIndex={-1} autoComplete="off" className="hidden" aria-hidden value={honeypot} onChange={(e) => setHoneypot(e.target.value)} name="company" />
-      <div className="flex items-center gap-4 pt-1">
-        <button type="submit" className="btn btn-solid relative overflow-hidden" disabled={status === 'sending'}>
-          <span ref={packetRef} aria-hidden className="absolute left-3 h-1.5 w-3 bg-surface/80" style={{ opacity: 0 }} />
-          <IconSend width={14} height={14} />
-          {status === 'sending' ? 'Sending…' : 'Send'}
-        </button>
-        <span className="font-mono text-[11px] text-muted">{siteContent.contact.formEndpoint ? 'Goes straight to my inbox.' : 'Opens your mail app.'}</span>
-      </div>
-      {status === 'error' && <p className="font-mono text-[11px] text-accent-text">That didn’t go through. Try again, or email me directly.</p>}
+      <p className="text-[16px] leading-[1.5] text-muted">{siteContent.contact.formEndpoint ? ui.form.viaEndpoint : ui.form.viaMailApp}</p>
+      <button type="submit" className="btn btn-solid btn-big relative w-full overflow-hidden sm:w-auto" disabled={status === 'sending'}>
+        <span ref={packetRef} aria-hidden className="absolute left-3 h-1.5 w-3 bg-surface/80" style={{ opacity: 0 }} />
+        <IconSend width={18} height={18} />
+        {status === 'sending' ? ui.form.sending : ui.form.send}
+      </button>
+      {status === 'error' && (
+        <p className="border-2 border-accent-text p-3 text-[17px] font-semibold text-accent-text" role="alert">
+          {ui.form.failed(siteContent.contact.email)}
+        </p>
+      )}
     </form>
   );
 }

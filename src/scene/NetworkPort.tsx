@@ -10,6 +10,8 @@ import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
 import { siteContent, type SocialLink } from '../content/siteContent';
 import { SceneHint } from './helpers';
+import { ui } from '../content/uiStrings';
+
 import { openSocial } from '../lib/navigation';
 import { createMetalTextures } from './textures';
 
@@ -196,7 +198,7 @@ export function NetworkPort() {
       {socials.map((s, i) => (
         <Plug key={s.id} social={s} index={i} total={socials.length} />
       ))}
-      <SceneHint id="plug" section={5} position={[FACE_X + 3.4, PORT_Y + 0.6, ANCHORS.port.z]} text="Drag a plug into its port, or just click it." />
+      <SceneHint id="plug" section={5} position={[FACE_X + 3.4, PORT_Y + 0.6, ANCHORS.port.z]} text={ui.hints.plug} />
     </group>
   );
 }

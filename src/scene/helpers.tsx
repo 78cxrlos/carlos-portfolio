@@ -81,23 +81,54 @@ export function LazySection({ center, radius, children }: { center: THREE.Vector
 }
 
 /**
- * First-time contextual hint anchored to a 3D object. Shown while its section
- * is active until the visitor interacts (markHint) or 9 seconds pass.
+ * First-time cue anchored to a 3D object: a word label ("Click …") with a
+ * gently pulsing outline. Shown while its section is active until the
+ * visitor uses that object (markHint) or 30 seconds pass.
  */
 export function SceneHint({ id, section, position, text }: { id: string; section: number; position: [number, number, number]; text: string }) {
-  const active = useStore((s) => s.section === section && s.booted && !s.hintsSeen.includes(id) && s.activeProject === null);
+  const active = useStore((s) => s.section === section && s.booted && !s.hintsSeen.includes(id) && s.activeProject === null && !s.tourOpen);
   const markHint = useStore((s) => s.markHint);
+  const touch = useStore((s) => s.isTouch);
   useEffect(() => {
     if (!active) return;
-    const t = window.setTimeout(() => markHint(id), 9000);
+    const t = window.setTimeout(() => markHint(id), 30000);
     return () => window.clearTimeout(t);
   }, [active, id, markHint]);
   if (!active) return null;
   return (
     <Html position={position} center zIndexRange={[30, 20]} style={{ pointerEvents: 'none' }}>
-      <div className="scene-hint">
-        <b>Try —</b> {text}
-      </div>
+      <div className="scene-hint">{touch ? text.replace(/^Click/, 'Tap').replace(/^Point at/, 'Tap') : text}</div>
     </Html>
   );
+}
+
+/* ---------- One consistent tooltip for 3D objects (see SceneTooltip in the DOM) ---------- */
+
+let pressTimer = 0;
+let hideTimer = 0;
+type PointerLike = { nativeEvent: PointerEvent } | PointerEvent;
+const native = (e: PointerLike) => ('nativeEvent' in e ? e.nativeEvent : e);
+
+/** Mouse: show the label at the pointer. */
+export function showSceneTip(e: PointerLike, text: string) {
+  const n = native(e);
+  if (n.pointerType !== 'mouse') return;
+  useStore.getState().setSceneTip({ text, x: n.clientX, y: n.clientY });
+}
+export function hideSceneTip() {
+  window.clearTimeout(pressTimer);
+  if (useStore.getState().sceneTip) useStore.getState().setSceneTip(null);
+}
+/** Touch: touch-and-hold for half a second shows the label for a few seconds. */
+export function longPressSceneTip(e: PointerLike, text: string) {
+  const n = native(e);
+  if (n.pointerType === 'mouse') return;
+  const { clientX: x, clientY: y } = n;
+  window.clearTimeout(pressTimer);
+  window.clearTimeout(hideTimer);
+  pressTimer = window.setTimeout(() => {
+    useStore.getState().setSceneTip({ text, x, y });
+    hideTimer = window.setTimeout(() => useStore.getState().setSceneTip(null), 2500);
+  }, 500);
+  window.addEventListener('pointerup', () => window.clearTimeout(pressTimer), { once: true });
 }

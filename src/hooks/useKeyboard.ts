@@ -4,6 +4,7 @@ import { scrollToSection } from './useScrollProgress';
 import { siteContent } from '../content/siteContent';
 import { playSound } from './useSound';
 import { runtime } from '../store/runtime';
+import { anyModalOpen } from './useModal';
 
 const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
@@ -33,7 +34,8 @@ export function activateGodMode() {
  * Global keyboard shortcuts:
  *  Ctrl/Cmd+K  command palette      `  terminal
  *  ↑/↓ ←/→ PgUp/PgDn  previous/next section
- *  Esc  close the top-most overlay   Konami code  easter egg
+ *  ?  help   Esc  close the top-most overlay   Konami code  easter egg
+ * Panels that use useModal handle their own Esc/Tab first (capture phase).
  */
 export function useKeyboard() {
   useEffect(() => {
@@ -74,8 +76,16 @@ export function useKeyboard() {
         return;
       }
 
-      const overlayOpen = s.paletteOpen || s.terminalOpen || s.activeProject !== null || !!s.secretMessage;
-      if (typing || overlayOpen || !s.booted || s.simpleView || e.altKey || e.metaKey || e.ctrlKey) return;
+      const overlayOpen = s.paletteOpen || s.terminalOpen || s.activeProject !== null || !!s.secretMessage || s.welcomeOpen || anyModalOpen();
+      if (typing || overlayOpen || e.altKey || e.metaKey || e.ctrlKey) return;
+      if (e.key === '?') {
+        e.preventDefault();
+        s.setHelp(true);
+        return;
+      }
+      if (!s.booted || s.simpleView || !s.webglOk) return;
+      // Focus inside a text panel: let the arrow keys scroll the panel as usual.
+      if ((e.target as HTMLElement | null)?.closest?.('.panel-scroll')) return;
       if (['ArrowDown', 'ArrowRight', 'PageDown'].includes(e.key)) {
         e.preventDefault();
         scrollToSection(s.section + 1);

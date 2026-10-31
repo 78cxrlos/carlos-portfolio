@@ -6,7 +6,8 @@
   "description": "Inside the Machine — a procedural 3D portfolio where the visitor is a signal travelling through a computer.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/check-contrast.mjs && tsc -b && vite build",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit"
   },

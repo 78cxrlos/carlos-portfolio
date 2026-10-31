@@ -152,3 +152,69 @@ export function SocialIcon({ id, ...p }: { id: string } & P) {
   if (id === 'email') return <IconMail {...p} />;
   return <IconExternal {...p} />;
 }
+export const IconHelp = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.6 9.2a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2.1-2.4 3.6" />
+    <path d="M12 17.2v.1" />
+  </svg>
+);
+export const IconArrowUp = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 19V5" />
+    <path d="M6 11l6-6 6 6" />
+  </svg>
+);
+export const IconHome = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 11l8-7 8 7" />
+    <path d="M6 9.5V20h12V9.5" />
+  </svg>
+);
+export const IconPhone = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />
+  </svg>
+);
+export const IconChat = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 20l1.4-4A8 8 0 1 1 8 18.6z" />
+  </svg>
+);
+export const IconDownload = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 4v11" />
+    <path d="M7 10.5l5 5 5-5" />
+    <path d="M5 20h14" />
+  </svg>
+);
+export const IconAccessibility = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="4.5" r="1.6" />
+    <path d="M5 8l7 1.5L19 8" />
+    <path d="M12 9.5V14l-3 6" />
+    <path d="M12 14l3 6" />
+  </svg>
+);
+/** Larger line drawings for the Help panel. */
+export const DrawMouse = (p: P) => (
+  <svg {...base({ width: 56, height: 56, strokeWidth: 1.4, ...p })}>
+    <rect x="7" y="3" width="10" height="17" rx="5" />
+    <path d="M12 3v6" />
+    <path d="M12 6v1.6" strokeWidth={2.6} />
+  </svg>
+);
+export const DrawHand = (p: P) => (
+  <svg {...base({ width: 56, height: 56, strokeWidth: 1.4, ...p })}>
+    <path d="M9 11V4.5a1.5 1.5 0 0 1 3 0V11" />
+    <path d="M12 10V8.5a1.5 1.5 0 0 1 3 0V11" />
+    <path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.6-2.2L4.5 15.6a1.5 1.5 0 0 1 2.3-1.9L9 16V11" />
+  </svg>
+);
+export const DrawKeyboard = (p: P) => (
+  <svg {...base({ width: 56, height: 56, strokeWidth: 1.4, ...p })}>
+    <rect x="2.5" y="6" width="19" height="12" rx="1.5" />
+    <path d="M6 9.5h1M9.5 9.5h1M13 9.5h1M16.5 9.5h1M6 12.5h1M17 12.5h1M9 15.5h6" />
+    <path d="M10 12.5h4" />
+  </svg>
+);

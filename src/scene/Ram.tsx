@@ -11,6 +11,8 @@ import { playSound } from '../hooks/useSound';
 import { siteContent } from '../content/siteContent';
 import { createMarkingTexture, createPaperLabel } from './textures';
 import { SceneHint, stationProximity, useFontsReady } from './helpers';
+import { ui } from '../content/uiStrings';
+
 
 const CHIPS_PER_STICK = 8;
 const STICK_LEN = 9.6;
@@ -171,7 +173,7 @@ export function Ram() {
       {siteContent.skills.map((c, i) => (
         <Stick key={c.id} index={i} count={count} />
       ))}
-      <SceneHint id="ram" section={2} position={[ANCHORS.ram.x + 3.6, 0.8, -6.4]} text="Hover a chip. The filters reseat the other sticks." />
+      <SceneHint id="ram" section={2} position={[ANCHORS.ram.x + 3.6, 0.8, -6.4]} text={ui.hints.ram} />
     </group>
   );
 }

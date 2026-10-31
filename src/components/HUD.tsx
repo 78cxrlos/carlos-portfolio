@@ -1,139 +1,112 @@
 import { useEffect, useRef, useState } from 'react';
+import { ui } from '../content/uiStrings';
 import { SECTIONS } from '../lib/sections';
 import { scrollToSection } from '../hooks/useScrollProgress';
-import { ACHIEVEMENTS, useStore } from '../store/useStore';
-import { runtime } from '../store/runtime';
+import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
+import { IconArrowLeft, IconArrowRight, IconArrowUp } from './Icons';
+
+const N = SECTIONS.length;
 
 /**
- * Schematic rail: a hairline with a major tick per section (labelled with
- * its reference designator), minor ticks between, and a small pointer that
- * follows the camera continuously. Vertical on the right on desktop,
- * horizontal under the navbar on phones.
+ * Clickable progress dots. Each one shows its name on hover, on keyboard
+ * focus, and for a moment after a tap (touch has no hover).
  */
-function Rail() {
-  const section = useStore((s) => s.section);
-  const pointer = useRef<HTMLSpanElement>(null);
-  const pointerH = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const p = `${Math.max(0, Math.min(1, runtime.camT)) * 100}%`;
-      if (pointer.current) pointer.current.style.top = p;
-      if (pointerH.current) pointerH.current.style.left = p;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const n = SECTIONS.length - 1;
+function Dots({ section }: { section: number }) {
+  const [tip, setTip] = useState<number | null>(null);
+  const timer = useRef(0);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const flash = (i: number) => {
+    setTip(i);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setTip(null), 1600);
+  };
   return (
-    <nav aria-label="Sections">
-      {/* desktop: vertical */}
-      <div className="fixed right-6 top-1/2 z-30 hidden h-[52vh] -translate-y-1/2 sm:block">
-        <div className="relative h-full w-px bg-overlay/45">
-          {Array.from({ length: n * 4 + 1 }, (_, i) => (
-            <span key={i} aria-hidden className="absolute right-0 h-px bg-overlay/45" style={{ top: `${(i / (n * 4)) * 100}%`, width: i % 4 === 0 ? 0 : 4 }} />
-          ))}
-          <span ref={pointer} aria-hidden className="absolute -right-[1px] h-0 w-0" style={{ top: 0 }}>
-            <span className="absolute right-[3px] top-[-4px] border-y-[4px] border-r-[6px] border-y-transparent border-r-accent" />
-          </span>
-          <ol>
-            {SECTIONS.map((s, i) => {
-              const active = i === section;
-              return (
-                <li key={s.id} className="absolute right-0 -translate-y-1/2" style={{ top: `${(i / n) * 100}%` }}>
-                  <button
-                    type="button"
-                    onClick={() => (playSound('click'), scrollToSection(i))}
-                    aria-label={`Go to ${s.label} (${s.hardware})`}
-                    aria-current={active ? 'step' : undefined}
-                    className="group flex items-center gap-2 py-1 pl-3"
-                  >
-                    <span className={`font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${active ? 'text-overlay' : 'text-overlay/55 group-hover:text-overlay'}`}>
-                      {s.ref}
-                      <span className={`ml-1.5 ${active ? 'inline' : 'hidden group-hover:inline group-focus-visible:inline'}`}>{s.label}</span>
-                    </span>
-                    <span aria-hidden className={`h-px transition-all ${active ? 'w-4 bg-accent' : 'w-2.5 bg-overlay/70'}`} />
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      </div>
-      {/* phone: horizontal under the navbar */}
-      <div className="fixed inset-x-4 top-[66px] z-30 sm:hidden">
-        <div className="relative h-px w-full bg-overlay/45">
-          <span ref={pointerH} aria-hidden className="absolute top-[3px] h-0 w-0" style={{ left: 0 }}>
-            <span className="absolute -left-[4px] top-0 border-x-[4px] border-b-[6px] border-x-transparent border-b-accent" />
-          </span>
-          {SECTIONS.map((s, i) => (
+    <ol className="flex items-center justify-center" aria-label={ui.progress.dotsLabel}>
+      {SECTIONS.map((s, i) => {
+        const active = i === section;
+        return (
+          <li key={s.id} className="relative">
             <button
-              key={s.id}
               type="button"
-              onClick={() => scrollToSection(i)}
-              aria-label={`Go to ${s.label}`}
-              aria-current={i === section ? 'step' : undefined}
-              className="absolute -top-[14px] -translate-x-1/2 px-1.5 pb-2 pt-1"
-              style={{ left: `${(i / n) * 100}%` }}
+              onClick={() => (playSound('click'), scrollToSection(i))}
+              onPointerEnter={(e) => e.pointerType === 'mouse' && setTip(i)}
+              onPointerLeave={(e) => e.pointerType === 'mouse' && setTip(null)}
+              onPointerDown={(e) => e.pointerType !== 'mouse' && flash(i)}
+              onFocus={() => setTip(i)}
+              onBlur={() => setTip(null)}
+              aria-label={`${ui.progress.goTo(s.label)} (${ui.progress.of(i + 1, N)})`}
+              aria-current={active ? 'step' : undefined}
+              className="grid h-11 w-11 place-items-center"
             >
-              <span aria-hidden className={`mx-auto block h-2 w-px ${i === section ? 'bg-accent' : 'bg-overlay/70'}`} />
+              <span aria-hidden className={`block border-2 border-ink transition-[width,height] ${active ? 'h-4 w-4 bg-accent' : i < section ? 'h-3 w-3 bg-ink' : 'h-3 w-3 bg-surface'}`} />
             </button>
-          ))}
-        </div>
-        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.1em] text-overlay/80">
-          {SECTIONS[section].ref} · {SECTIONS[section].label}
-        </p>
-      </div>
-    </nav>
+            {tip === i && (
+              <span role="tooltip" className="pointer-events-none absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap border-2 border-ink bg-surface px-2 py-0.5 font-mono text-[15px] text-ink">
+                {s.label}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
-function ScrollHint() {
-  const [show, setShow] = useState(true);
+/**
+ * Fixed at the bottom of the 3D view: Back, where you are ("Section 2 of 7"),
+ * clickable dots, Next. Pressing Next alone walks through the whole site.
+ */
+export function HUD() {
+  const section = useStore((s) => s.section);
   const booted = useStore((s) => s.booted);
-  useEffect(() => {
-    const on = () => window.scrollY > 40 && setShow(false);
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
-  }, []);
+  const prev = SECTIONS[section - 1];
+  const next = SECTIONS[section + 1];
+  const go = (i: number) => (playSound('click'), scrollToSection(i));
   if (!booted) return null;
   return (
-    <div
-      aria-hidden={!show}
-      className={`pointer-events-none fixed bottom-6 right-6 z-30 hidden items-center gap-3 font-mono text-[10.5px] uppercase tracking-[0.12em] text-overlay/80 transition-opacity duration-500 sm:flex ${show ? 'opacity-100' : 'opacity-0'}`}
-    >
-      <span className="block h-8 w-px bg-overlay/60" />
-      Scroll, or use ↑ ↓
-    </div>
-  );
-}
+    <nav aria-label={ui.progress.dotsLabel} className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-ink bg-surface text-ink">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 py-1.5 sm:px-4 max-md:grid-cols-[auto_1fr_auto]">
+        <div className="flex items-center gap-2">
+          {prev ? (
+            <button type="button" className="btn !px-3" onClick={() => go(section - 1)} aria-label={ui.progress.backTo(prev.label)}>
+              <IconArrowLeft width={16} height={16} /> <span>{ui.progress.back}</span>
+            </button>
+          ) : (
+            <span className="h-12 w-[88px]" aria-hidden />
+          )}
+          <button type="button" className={`btn-quiet hidden lg:inline-flex ${section === 0 ? 'invisible' : ''}`} onClick={() => go(0)}>
+            <IconArrowUp width={16} height={16} /> {ui.progress.top}
+          </button>
+        </div>
 
-function AchievementsButton() {
-  const count = useStore((s) => s.achievements.length);
-  const setOpen = useStore((s) => s.setAchievementsOpen);
-  const total = Object.keys(ACHIEVEMENTS).length;
-  return (
-    <button
-      type="button"
-      onClick={() => (setOpen(true), playSound('click'))}
-      className="tag-card fixed bottom-4 left-4 z-30 hidden items-center gap-2 px-2.5 py-1.5 text-[11px] uppercase tracking-[0.08em] transition-transform hover:-translate-y-px sm:flex"
-      aria-label={`Inspection log: ${count} of ${total} checks passed`}
-    >
-      QC <span className="tabular-nums">{count}/{total}</span>
-    </button>
-  );
-}
+        <div className="flex min-w-0 flex-col items-center">
+          <p className="text-center font-mono text-[15px] leading-tight" aria-live="polite">
+            <span className="text-muted">{ui.progress.of(section + 1, N)}:</span> <span className="whitespace-nowrap font-semibold">{SECTIONS[section].label}</span>
+          </p>
+          <div className="max-md:hidden">
+            <Dots section={section} />
+          </div>
+        </div>
 
-export function HUD() {
-  return (
-    <>
-      <Rail />
-      <ScrollHint />
-      <AchievementsButton />
-    </>
+        <div className="flex justify-end">
+          {next ? (
+            <button type="button" data-tour="next" className="btn btn-solid !px-3 sm:!px-4" onClick={() => go(section + 1)} aria-label={`${ui.progress.next}: ${next.label}`}>
+              <span className="sm:hidden">{ui.progress.next}</span>
+              <span className="hidden sm:inline">{ui.progress.nextTo(next.label)}</span>
+              <IconArrowRight width={16} height={16} />
+            </button>
+          ) : (
+            <button type="button" data-tour="next" className="btn btn-solid" onClick={() => go(0)}>
+              <IconArrowUp width={16} height={16} /> {ui.progress.top}
+            </button>
+          )}
+        </div>
+      </div>
+      {/* phones: dots on their own row, so every one is a full-size target */}
+      <div className="border-t border-ink/30 md:hidden">
+        <Dots section={section} />
+      </div>
+    </nav>
   );
 }

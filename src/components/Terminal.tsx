@@ -4,10 +4,11 @@ import { siteContent } from '../content/siteContent';
 import { SECTIONS } from '../lib/sections';
 import { THEMES, THEME_ORDER, resolveThemeId } from '../lib/themes';
 import { navigateTo, openResume } from '../lib/navigation';
-import { shutdown } from '../lib/power';
+import { requestShutdown } from '../lib/power';
 import { activateGodMode } from '../hooks/useKeyboard';
 import { playSound } from '../hooks/useSound';
-import { ACHIEVEMENTS, useStore } from '../store/useStore';
+import { ACHIEVEMENTS, useStore, type AchievementId } from '../store/useStore';
+import { ui } from '../content/uiStrings';
 import { runtime } from '../store/runtime';
 import { IconClose } from './Icons';
 
@@ -17,7 +18,9 @@ interface Line {
   content: ReactNode;
 }
 
-const COMMANDS = ['help', 'about', 'skills', 'projects', 'open', 'experience', 'contact', 'theme', 'sound', 'goto', 'clear', 'resume', 'reboot', 'whoami', 'achievements', 'simple', 'exit'];
+const COMMANDS = ['help', 'about', 'skills', 'projects', 'open', 'experience', 'contact', 'theme', 'sound', 'goto', 'clear', 'resume', 'reboot', 'whoami', 'todo', 'hint', 'achievements', 'simple', 'exit'];
+/** One-tap commands under the title bar, so nobody has to know what to type. */
+const QUICK = ['help', 'about', 'projects', 'contact', 'todo'];
 const HELP: [string, string][] = [
   ['help', 'list commands'],
   ['about', 'who am I'],
@@ -30,7 +33,8 @@ const HELP: [string, string][] = [
   ['theme <name>', `switch theme: ${THEME_ORDER.join(' | ')}`],
   ['sound on|off', 'toggle sound'],
   ['resume', 'open resume'],
-  ['achievements', 'list discoveries'],
+  ['todo', 'things to try, with clues for the secrets'],
+  ['hint <name>', 'the exact answer for a secret (e.g. hint chip)'],
   ['simple', 'toggle Simple View'],
   ['clear', 'clear the screen'],
   ['reboot', 'power cycle the machine'],
@@ -42,7 +46,7 @@ const mk = (kind: Line['kind'], content: ReactNode): Line => ({ id: lineId++, ki
 
 const banner = () => [
   mk('sys', `itm-os 2.3 (tty1) — ${siteContent.person.name.toLowerCase().replace(/\s+/g, '')}@bench`),
-  mk('sys', 'Last login: today, on this board. Type `help`. Tab completes, ↑/↓ for history.'),
+  mk('sys', 'Type help and press Enter, or tap a command above. Tab completes, ↑/↓ for history.'),
 ];
 
 export function Terminal() {
@@ -107,11 +111,11 @@ export function Terminal() {
               'out',
               <span>
                 <span className="inline-block w-40 text-[#e9e4d8]">{c}</span>
-                <span className="text-[#8e887b]">{d}</span>
+                <span className="text-[#b3ad9f]">{d}</span>
               </span>,
             ),
           ),
-          mk('sys', 'There are a few more. I won’t say which.'),
+          mk('sys', 'There are a few secret commands too. Type todo for clues.'),
         );
       case 'about':
       case 'whoami':
@@ -177,12 +181,37 @@ export function Terminal() {
       case 'resume':
         openResume();
         return print(mk('out', 'opening résumé in a new tab'));
-      case 'achievements':
+      case 'todo':
+      case 'things':
+      case 'clues':
+      case 'achievements': {
+        const ids = Object.keys(ACHIEVEMENTS) as AchievementId[];
         return print(
-          ...Object.entries(ACHIEVEMENTS).map(([id, a]) =>
-            mk('out', `${s.achievements.includes(id as keyof typeof ACHIEVEMENTS) ? '[x]' : '[ ]'} ${a.label.padEnd(16, ' ')} ${s.achievements.includes(id as keyof typeof ACHIEVEMENTS) ? a.hint : '???'}`),
-          ),
+          mk('sys', `${ui.extras.title}: ${ui.extras.progress(s.achievements.length, ids.length)}`),
+          ...ids.map((id) => {
+            const a = ACHIEVEMENTS[id];
+            const done = s.achievements.includes(id);
+            const text = a.secret && !done ? `clue: ${a.clue}` : a.task ?? a.answer;
+            return mk(
+              'out',
+              <span>
+                <span className="text-[#e9e4d8]">
+                  {done ? '[x]' : '[ ]'} {a.label}
+                  {a.secret ? ` (secret · hint ${id})` : ''}
+                </span>
+                {'\n    '}
+                <span className="text-[#b3ad9f]">{text}</span>
+              </span>,
+            );
+          }),
         );
+      }
+      case 'hint': {
+        const key = arg.toLowerCase().trim();
+        const id = (Object.keys(ACHIEVEMENTS) as AchievementId[]).find((k) => ACHIEVEMENTS[k].secret && (k === key || ACHIEVEMENTS[k].label.toLowerCase() === key));
+        if (!id) return print(mk('err', `hint: try one of ${(Object.keys(ACHIEVEMENTS) as AchievementId[]).filter((k) => ACHIEVEMENTS[k].secret).join(', ')}`));
+        return print(mk('out', ACHIEVEMENTS[id].answer ?? ''));
+      }
       case 'simple':
         s.setSimpleView(!s.simpleView);
         window.scrollTo(0, 0);
@@ -196,8 +225,8 @@ export function Terminal() {
         return setLines([]);
       case 'reboot':
       case 'shutdown':
-        print(mk('sys', 'Broadcast message from visitor@bench: the system is going down for reboot NOW.'));
-        window.setTimeout(() => shutdown(), 400);
+        print(mk('sys', 'Broadcast message from visitor@bench: the system wants to go down for reboot.'));
+        window.setTimeout(() => requestShutdown(), 200);
         return;
       case 'exit':
       case 'quit':
@@ -227,6 +256,7 @@ export function Terminal() {
     else if (cmd === 'theme') pool = THEME_ORDER;
     else if (cmd === 'sound') pool = ['on', 'off'];
     else if (cmd === 'goto' || cmd === 'cd') pool = SECTIONS.map((x) => x.id);
+    else if (cmd === 'hint') pool = (Object.keys(ACHIEVEMENTS) as AchievementId[]).filter((k) => ACHIEVEMENTS[k].secret);
     const matches = pool.filter((p) => p.startsWith(partial.toLowerCase()));
     if (matches.length === 1) setInput(`${cmd} ${matches[0]}`);
     else if (matches.length > 1) print(mk('sys', matches.join('  ')));
@@ -258,18 +288,35 @@ export function Terminal() {
     <div className="fixed inset-x-0 bottom-0 z-[65] flex justify-center p-2 sm:p-4" role="dialog" aria-modal="false" aria-label="Terminal">
       <div
         ref={boxRef}
-        className="flex h-[min(60vh,440px)] w-full max-w-3xl flex-col border border-[#3a3733] bg-[#161513] font-mono text-[13px] text-[#d8d2c4] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.8)]"
+        className="flex h-[min(70vh,500px)] w-full max-w-3xl flex-col border border-[#3a3733] bg-[#161513] font-mono text-[13px] text-[#d8d2c4] shadow-[0_24px_50px_-20px_rgba(0,0,0,0.8)]"
         onClick={() => inputRef.current?.focus()}
       >
         <div className="flex items-center justify-between border-b border-[#3a3733] bg-[#1e1c1a] px-3 py-1.5">
-          <span className="text-[11px] text-[#9a9385]">tty1 — 80×24 — bash</span>
-          <button type="button" onClick={() => setOpen(false)} className="grid h-7 w-7 place-items-center text-[#9a9385] hover:text-[#e9e4d8]" aria-label="Close terminal">
-            <IconClose width={14} height={14} />
+          <span className="text-[11px] text-[#b3ad9f]">Terminal (just for fun) · type <b className="text-[#e9e4d8]">help</b> and press Enter</span>
+          <button type="button" onClick={() => setOpen(false)} className="flex min-h-[44px] items-center gap-1.5 px-3 text-[#d8d2c4] hover:text-[#e9e4d8]" aria-label="Close terminal">
+            <IconClose width={14} height={14} /> Close
           </button>
         </div>
-        <div ref={scrollRef} className="panel-scroll flex-1 space-y-0.5 overflow-y-auto px-4 py-3" aria-live="polite">
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-[#3a3733] px-3 py-1.5" role="group" aria-label="Quick commands">
+          <span className="text-[#b3ad9f]">Tap to run:</span>
+          {QUICK.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className="min-h-[44px] border border-[#5a554d] px-3 text-[#e9e4d8] hover:border-[#e9e4d8]"
+              onClick={(e) => {
+                e.stopPropagation();
+                exec(c);
+                inputRef.current?.focus();
+              }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <div ref={scrollRef} tabIndex={0} aria-label="Terminal output" className="panel-scroll flex-1 space-y-0.5 overflow-y-auto px-4 py-3" aria-live="polite">
           {lines.map((l) => (
-            <div key={l.id} className={`whitespace-pre-wrap break-words ${l.kind === 'err' ? 'text-[#ff8a5c]' : l.kind === 'sys' ? 'text-[#8e887b]' : ''}`}>
+            <div key={l.id} className={`whitespace-pre-wrap break-words ${l.kind === 'err' ? 'text-[#ff8a5c]' : l.kind === 'sys' ? 'text-[#a39c8e]' : ''}`}>
               {l.kind === 'in' ? (
                 <>
                   <span className="text-[#a9c49a]">visitor@bench:~$</span> {l.content}

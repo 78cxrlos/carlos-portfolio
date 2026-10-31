@@ -2,6 +2,18 @@ import gsap from 'gsap';
 import { useStore } from '../store/useStore';
 import { runtime } from '../store/runtime';
 import { playSound } from '../hooks/useSound';
+import { ui } from '../content/uiStrings';
+
+/** Power off is a playful extra, but it resets the page, so always ask first. */
+export function requestShutdown() {
+  useStore.getState().askConfirm({
+    title: ui.end.confirmTitle,
+    body: ui.end.confirmBody,
+    confirmLabel: ui.end.confirmYes,
+    cancelLabel: ui.end.confirmNo,
+    onConfirm: shutdown,
+  });
+}
 
 /**
  * Shutdown / reboot: dims every emissive in the scene (runtime.powerDown is

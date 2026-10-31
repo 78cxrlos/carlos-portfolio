@@ -5,7 +5,9 @@ import { BOARD_SIZE } from '../lib/sections';
 import { addRipple, runtime } from '../store/runtime';
 import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
-import { SceneHint } from './helpers';
+import { SceneHint, hideSceneTip, showSceneTip } from './helpers';
+import { ui } from '../content/uiStrings';
+
 
 type Kind = 'screw' | 'chip' | 'cap';
 const PARTS: { kind: Kind; pos: [number, number] }[] = [
@@ -94,6 +96,7 @@ function Part({ kind, start }: { kind: Kind; start: [number, number] }) {
 
   const onDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    hideSceneTip();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     st.dragging = true;
     runtime.dragging = true;
@@ -124,8 +127,12 @@ function Part({ kind, start }: { kind: Kind; start: [number, number] }) {
     onPointerOver: (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
       setCursor('grab');
+      if (!st.dragging) showSceneTip(e, ui.hints.screwTip);
     },
-    onPointerOut: () => !st.dragging && setCursor('default'),
+    onPointerOut: () => {
+      hideSceneTip();
+      if (!st.dragging) setCursor('default');
+    },
   };
 
   return (
@@ -172,7 +179,7 @@ export function Parts() {
       {PARTS.map((p, i) => (
         <Part key={i} kind={p.kind} start={p.pos} />
       ))}
-      <SceneHint id="parts" section={0} position={[-3, 1.6, 5]} text="Loose screws. Pick one up and throw it." />
+      <SceneHint id="parts" section={0} position={[-3, 1.6, 5]} text={ui.hints.parts} />
     </group>
   );
 }

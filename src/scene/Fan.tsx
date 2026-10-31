@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { runtime } from '../store/runtime';
+import { useStore } from '../store/useStore';
 import { playSound } from '../hooks/useSound';
 import { useHoverCursor } from './helpers';
 
@@ -59,6 +60,7 @@ export function Fan({
           e.stopPropagation();
           runtime.fanBoost = Math.min(3, runtime.fanBoost + 1.2);
           playSound('click');
+          useStore.getState().unlock('fan');
         }}
       >
         <cylinderGeometry args={[radius * 1.06, radius * 1.06, 0.5, 40, 1, true]} />
